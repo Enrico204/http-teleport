@@ -1,0 +1,15 @@
+version: '3'
+
+services:
+  telescope:
+    build: ..
+    environment:
+      - CFG_WEB_UPSTREAM=http://adminer:8080
+      - CFG_DISABLE_CACHING=true
+      - CFG_STORE_BODY=true
+    ports:
+      - "3001:3001"
+      - "3002:3002"
+
+  adminer:
+    image: adminer:latest

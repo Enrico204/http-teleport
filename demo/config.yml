@@ -1,0 +1,13 @@
+log:
+  level: debug
+#  methodname: false
+#  json: false
+#  destination: stderr
+#  file: /tmp/debug.log
+web:
+#  listen: 0.0.0.0:3001
+#  ui: 0.0.0.0:3002
+#  readtimeout: 5s
+#  writetimeout: 5s
+#  shutdowntimeout: 5s
+  upstream: http://localhost:3000

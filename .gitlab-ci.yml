@@ -1,0 +1,24 @@
+stages:
+  - check
+
+code_check:
+  tags:
+    - docker
+  stage: check
+  image: golang:1.17
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+    - if: $CI_MERGE_REQUEST_ID
+  before_script:
+    - export PATH=$PATH:~/go/bin/
+    - go install github.com/psampaz/go-mod-outdated@v0.8.0
+    - go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.43.0
+  script:
+    # go test cannot modify go.sum and go.mod starting from Go 1.16. But some
+    # tests require additional dependencies and causes the command to fail. So
+    # we need to relax the constrain.
+    # See official docs: https://golang.org/ref/mod#build-commands
+    # And related issue: https://github.com/golang/go/issues/44129#issuecomment-814131122
+    - go test ./... -mod=mod
+    - golangci-lint run
+    - go list -u -m -json all | go-mod-outdated -update -direct

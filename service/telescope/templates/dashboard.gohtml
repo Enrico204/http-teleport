@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<title>HTTP Telescope dashboard</title>
+	<style>
+		html, body {
+			font-family: 'avenir next', avenir, sans-serif;
+			background-color: #f4f4f4;
+			color: #333;
+		}
+
+		table {
+			margin: auto;
+			border-collapse: collapse;
+			background-color: #fdfdfd;
+			border-radius: 5px;
+			width: 75%;
+		}
+
+		table th {
+			background-color: #eee;
+			padding: 10px 10px;
+			font-weight: normal;
+			text-align: inherit;
+			border-radius: 0;
+		}
+
+		table td {
+			padding: 20px 10px;
+			border-radius: 0;
+		}
+
+		table td.urlpath {
+			font-family: monospace;
+		}
+
+		span.rounded {
+			border: 1px #e0e0e0 solid;
+			border-radius: 5px;
+			padding: 5px;
+		}
+
+		span.http1 {
+			border-color: #e0e0e0;
+			background-color: #eee;
+		}
+
+		span.http2 {
+			border-color: #e0f0e0;
+			background-color: #efe;
+		}
+
+		span.http3 {
+			border-color: #e0e0f0;
+			background-color: #eef;
+		}
+
+		span.http4 {
+			border-color: #f0e0e0;
+			background-color: #fee;
+		}
+
+		span.http5 {
+			border-color: #f99;
+			background-color: #faa;
+		}
+
+		span.verbGET {
+			border-color: #e0f0e0;
+			background-color: #efe;
+		}
+
+		span.verbPOST {
+			border-color: #e0e0f0;
+			background-color: #eef;
+		}
+
+		span.verbPUT {
+			border-color: #f0e0e0;
+			background-color: #fee;
+		}
+
+		span.verbDELETE {
+			border-color: #f99;
+			background-color: #faa;
+		}
+
+		span.key {
+			color: #66f;
+		}
+
+		span.string {
+			color: #f66;
+		}
+
+		span.number {
+			color: #393;
+		}
+
+		span.boolean {
+			color: #0aa;
+		}
+
+		abbr {
+			text-decoration: none;
+		}
+
+		.details td {
+			padding: 0 50px;
+		}
+
+		.details pre {
+			border: 1px #ccc solid;
+			background-color: #ddd;
+			padding: 5px;
+			white-space: pre-wrap;
+			word-wrap: anywhere;
+		}
+	</style>
+	<script>
+		function details(idx) {
+			let el = document.getElementById("details" + idx);
+			if (el.style.display === "none") {
+				el.style.display = "";
+			} else {
+				el.style.display = "none";
+			}
+		}
+
+		// From: https://stackoverflow.com/questions/4810841/pretty-print-json-using-javascript
+		function syntaxHighlight(json) {
+			if (typeof json != 'string') {
+				json = JSON.stringify(json, undefined, 2);
+			}
+			json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+			return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+				var cls = 'number';
+				if (/^"/.test(match)) {
+					if (/:$/.test(match)) {
+						cls = 'key';
+					} else {
+						cls = 'string';
+					}
+				} else if (/true|false/.test(match)) {
+					cls = 'boolean';
+				} else if (/null/.test(match)) {
+					cls = 'null';
+				}
+				return '<span class="' + cls + '">' + match + '</span>';
+			});
+		}
+
+		function preToJson(tag, id) {
+			const obj = document.getElementById(tag + id);
+			obj.innerHTML = syntaxHighlight(JSON.parse(obj.innerText));
+		}
+	</script>
+</head>
+<body>
+<table>
+	<tr>
+		<td colspan="5">{{ len .Tracks }} Requests</td>
+	</tr>
+	<tr>
+		<th>Verb</th>
+		<th style="width: 50%">Path</th>
+		<th>Status</th>
+		<th>Duration</th>
+		<th>When</th>
+		<th>&nbsp;</th>
+	</tr>
+    {{ range $idx, $el := .Tracks }}
+		<tr onclick="details({{ $idx }})" class="{{ .Class }}">
+			<td><span class="rounded verb{{ .Method }}">{{ .Method }}</span></td>
+			<td class="urlpath">{{ .URL.Path }}</td>
+            {{ if .Response }}
+				{{ if .Response.Error }}
+					<td><span class="rounded http5">Error</span></td>
+				{{ else }}
+					<td><span class="rounded http{{ .StatusCodeGroup }}">
+							<abbr title="{{ .Response.Status }}">{{ .Response.StatusCode }}</abbr>
+						</span></td>
+                {{ end }}
+				<td>{{ .Duration }}</td>
+            {{ else }}
+				<td>-</td>
+				<td>-</td>
+            {{ end }}
+			<td>
+				<abbr title="{{ .When }}" class="datetime" data-secondsago="{{ .SecondsAgo }}">{{ .When }}</abbr>
+			</td>
+		</tr>
+		<tr id="details{{ $idx }}" class="details" style="display: none;">
+			<td colspan="5">
+				<table>
+					<tr>
+						<th>Duration</th>
+						<td>{{ .Duration }}</td>
+					</tr>
+					<tr>
+						<th>Remote address</th>
+						<td>{{ .RemoteAddr }}</td>
+					</tr>
+					<tr>
+						<th>URL</th>
+						<td>{{ .URL }}</td>
+					</tr>
+					{{ if .Response }}
+					{{ if .Response.Error }}
+					<tr>
+						<th>Error</th>
+						<td>{{ .Response.Error }}</td>
+					</tr>
+                    {{ end }}
+					{{ end }}
+				</table>
+				<pre>{{ .RequestString }}</pre>
+				<pre id="reqbody{{ $idx }}">{{ .RequestBodyString }}</pre>
+				{{ if .IsJSON }}
+					<script>preToJson("reqbody", {{ $idx }});</script>
+				{{ end }}
+                {{ if .Response }}
+				<pre>{{ .ResponseString }}</pre>
+				<pre id="respbody{{ $idx }}">{{ .ResponseBodyString }}</pre>
+					{{ if .Response.IsJSON }}
+						<script>preToJson("respbody", {{ $idx }});</script>
+					{{ end }}
+                {{ end }}
+			</td>
+		</tr>
+    {{ end }}
+</table>
+<script>
+	const rtf = new Intl.RelativeTimeFormat("en", {numeric: "auto"});
+	const elements = document.getElementsByClassName("datetime");
+	for (const element of elements) {
+		let seconds = parseInt(element.getAttribute("data-secondsago"));
+		let unit = "seconds";
+		if (seconds > 60 * 60) {
+			seconds = seconds / (60 * 60);
+			unit = "hour";
+		} else if (seconds > 60) {
+			seconds = seconds / 60;
+			unit = "minute";
+		}
+		element.innerHTML = rtf.format(-seconds, unit);
+	}
+</script>
+</body>
+</html>

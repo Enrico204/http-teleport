@@ -1,0 +1,15 @@
+*.yml
+README.md
+sql/
+k8s/
+docker-compose.log
+demo/
+db/
+.idea/
+bin/
+pkg/
+src/
+*.iml
+.DS_Store
+.env
+*.wiki.git
