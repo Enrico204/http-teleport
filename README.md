@@ -2,6 +2,8 @@
 
 Debug HTTP requests using a reverse proxy.
 
+![Dashboard screenshot](dashboard-screenshot.png "Dashboard screenshot")
+
 ## Description
 
 This is a simple single-host reverse proxy that intercept and save HTTP
